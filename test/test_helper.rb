@@ -31,6 +31,7 @@ require "webmock/minitest"
 # Due to load order differences in Rails boot and test requires we have to
 # manually require these
 
+# TODO wonder if we can load rails only for the rails tests...
 require 'vanity/frameworks/rails'
 Vanity::Rails.load!
 
@@ -47,30 +48,36 @@ module VanityTestHelpers
   # don't use databases you care about. For Redis, we pick database 15
   # (default is 0).
   DATABASE = {
-    "redis"=>"redis://localhost/15",
-    "mongodb"=>"mongodb://localhost/vanity",
-    "active_record"=> { "adapter"=>"active_record", "active_record_adapter"=>"default" },
-    "mock"=>"mock:/"
+    "redis" => "redis://localhost/15",
+    "mongodb" => "mongodb://localhost/vanity",
+    "active_record" =>  { :adapter => "active_record", :active_record_adapter =>"default" },
+    "mock" => "mock:/"
   }[ENV["DB"]] or raise "No support yet for #{ENV["DB"]}"
 
   def setup_after
     FileUtils.mkpath "tmp/experiments/metrics"
-    new_playground
+    vanity_reset
   end
 
   def teardown_after
     Vanity.context = nil
     FileUtils.rm_rf "tmp"
-    Vanity.playground.connection.flushdb if Vanity.playground.connected?
+    Vanity.connection.adapter.flushdb if Vanity.connection.connected?
     WebMock.reset!
   end
 
   # Call this if you need a new playground, e.g. to re-define the same experiment,
   # or reload an experiment (saved by the previous playground).
-  def new_playground
-    Vanity.playground = Vanity::Playground.new(:logger=>$logger, :load_path=>"tmp/experiments")
+  def vanity_reset
+    Vanity.reset!
+    Vanity.configuration.logger = $logger
+    Vanity.configuration.experiments_path = "tmp/experiments"
+
+    Vanity.disconnect!
     ActiveRecord::Base.establish_connection
-    Vanity.playground.establish_connection(DATABASE)
+    Vanity.connect!(DATABASE)
+
+    Vanity.unload!
   end
 
   # Defines the specified metrics (one or more names). Returns metric, or array
@@ -87,7 +94,7 @@ module VanityTestHelpers
   def new_ab_test(name, &block)
     id = name.to_s.downcase.gsub(/\W/, "_").to_sym
     experiment = Vanity::Experiment::AbTest.new(Vanity.playground, id, name)
-    experiment.instance_eval &block
+    experiment.instance_eval(&block)
     experiment.save
     Vanity.playground.experiments[id] = experiment
   end
@@ -102,8 +109,7 @@ module VanityTestHelpers
   end
 
   def not_collecting!
-    Vanity.playground.collecting = false
-    Vanity.playground.stubs(:connection).returns(stub(:flushdb=>nil))
+    Vanity.configuration.collecting = false
   end
 
   def dummy_request

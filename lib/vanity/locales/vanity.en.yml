@@ -1,5 +1,11 @@
 en:
   vanity:
+    warning:
+      environment_config: 'Deprecated: Please specify the environment via the configuration. This fallback may be removed in a future version.'
+      redis_yml: 'Deprecated: Please specify the vanity config file, the default fallback to "config/redis.yml" may be removed in a future version.'
+      playground_experiment_sym: 'Deprecated: Please call experiment method with experiment identifier (a Ruby symbol)'
+    failure:
+      no_configuration: 'No configuration for %{environment}'
     best_alternative: '(%{probability}% this is best)'
     best_alternative_is_significant: 'With %{probability}% probability this result is statistically significant.'
     best_alternative_probability: 'With %{probability}% probability this result is the best.'

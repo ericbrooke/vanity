@@ -121,7 +121,7 @@ class AbTestTest < ActionController::TestCase
   # -- use_js! --
 
   def test_choose_does_not_record_participant_when_using_js
-    Vanity.playground.use_js!
+    Vanity.configuration.use_js = true
     ids = (0...10).to_a
     new_ab_test :foobar do
       alternatives "foo", "bar"
@@ -1021,7 +1021,7 @@ This experiment did not run long enough to find a clear winner.
     assert [:a, :b, :c].include?(choice)
     assert_equal choice, experiment(:simple).choose.value
   end
-  
+
   def test_reset_clears_participants
     new_ab_test :simple do
       alternatives :a, :b, :c
@@ -1032,7 +1032,7 @@ This experiment did not run long enough to find a clear winner.
     experiment(:simple).reset
     assert_equal experiment(:simple).alternatives[1].participants, 0
   end
-  
+
   def test_clears_outcome_and_completed_at
     new_ab_test :simple do
       alternatives :a, :b, :c

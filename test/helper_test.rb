@@ -10,7 +10,6 @@ describe Object do
       end
       track! :coolness, :identity=>'quux', :values=>[2]
 
-      # experiment(:foobar).alternatives.sum(&:conversions).must_equal 2
       assert_equal 2, experiment(:foobar).alternatives.sum(&:conversions)
     end
   end
